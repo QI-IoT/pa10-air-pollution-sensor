@@ -1,8 +1,9 @@
 import logging
+import sqlite3
 from neo import Gpio
 from threading import Thread
 from threading import Lock
-from time import gmtime, sleep, strftime
+from time import sleep, time
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,11 @@ class SensorServer(Thread):
         # Create a lock to protect sensor output. That is, when updating the result, lock it on to prevent it from being
         # read at the same time; similarly, when reading the result, lock it on to prevent it from being updated.
         self.sensor_output_lock = Lock()
+
+        self.db_conn = sqlite3.connect("air_pollution_data.db")
+        self.db_cur = self.db_conn.cursor()
+        for sensor_name in self.sensor_names:
+            self.db_cur.execute("CREATE TABLE IF NOT EXISTS %s (time int PRIMARY KEY NOT NULL, value real)" % sensor_name)
 
     def get_sensor_output(self):
         # Get the latest sensor output
@@ -82,7 +88,7 @@ class SensorServer(Thread):
             # Acquire the lock
             self.sensor_output_lock.acquire()
             # Add time stamp
-            self.sensor_output['time'] = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            self.sensor_output['time'] = int(time())
 
             # Do sensor reading here
             #  1. set MUX to sensor 1, read sensor 1;
