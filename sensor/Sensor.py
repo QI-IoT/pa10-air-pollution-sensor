@@ -29,6 +29,8 @@ class SensorServer(Thread):
         self.adc_raw = "/sys/bus/iio/devices/iio:device0/in_voltage0_raw"
         self.adc_scale = "/sys/bus/iio/devices/iio:device0/in_voltage_scale"
 
+        self.sensor_names = ['Temp', 'SN1', 'SN2', 'SN3', 'SN4', 'PM25']
+
         # Use a dict to store sensor output, the format is:
         # { "time": [time stamp],
         #   [sensor1 name]: [sensor1 output],
@@ -88,9 +90,10 @@ class SensorServer(Thread):
             #  ...
             #  n. set MUX to sensor n, read sensor n.
             for i in xrange(0, 6):
-                logger.info("Reading sensor %d" % i)
-                self.read_sensor(i)
-                # print "Reading sensor %d" % i
+                logger.info("Reading %s sensor..." % self.sensor_names[i])
+                print "Reading %s sensor..." % self.sensor_names[i]
+                v1, v2 = self.read_sensor(i)
+                self.sensor_output[self.sensor_names[i]] = v1 - v2
 
             self.sensor_output_lock.release()
 
