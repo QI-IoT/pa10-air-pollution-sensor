@@ -4,7 +4,7 @@ from sensor import SensorServer
 
 if __name__ == '__main__':
     server = SensorServer()
-
+    server.daemon = True
     server.start()
 
     while True:
