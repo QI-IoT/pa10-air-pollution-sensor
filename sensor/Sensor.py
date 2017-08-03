@@ -45,7 +45,7 @@ class SensorServer(Thread):
         # Here we have a decision to make. I decide to let sensor server write sensor outputs to the local database. Of
         # course we can do so in a different thread either in a synchronous way or in an asynchronous way. If we do it
         # with a synchronous approach, we need to use locks to keep synchronization; if we do it with an asynchronous
-        # solution, then SQL3Lite is already an asynchronous module and I don't see good reason of adding another layer
+        # solution, then SQLite3 is already an asynchronous module and I don't see good reason of adding another layer
         # of complexity. Perhaps the most reasonable way would be specifying the database in the main thread and then
         # send it to the sensor server thread.
         self.database_name = database_name
@@ -115,12 +115,22 @@ class SensorServer(Thread):
             return 0.0, 0.0
 
     def run(self):
+        try:
+            # Create the database file and get the connection object.
+            self.db_conn = sqlite3.connect(self.database_name)
+            # Get database cursor from the connection object.
+            self.db_cur = self.db_conn.cursor()
+        except Exception as e:
+            logger.error("Error connecting the database {}, reason: {}".format(self.database_name, e.message))
+            self.__del__()
+
         # Keep reading sensors.
         while True:
             # Acquire the lock
             self.sensor_output_lock.acquire()
             # Add time stamp
-            self.sensor_output['time'] = int(time())
+            epoch_time = int(time())
+            self.sensor_output['time'] = epoch_time
 
             # Do sensor reading here
             #  1. set MUX to sensor 0, read sensor 0;
@@ -136,6 +146,7 @@ class SensorServer(Thread):
             logger.info("{} sensor outputs {} degree".format(self.sensor_names[0], temperature))
             # Save output to the dict
             self.sensor_output[self.sensor_names[0]] = temperature
+            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[0], epoch_time, temperature))
 
             logger.info("Reading {} sensor...".format(self.sensor_names[1]))
             c2, c3 = self.read_sensor(1)
@@ -143,6 +154,7 @@ class SensorServer(Thread):
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[1], output))
             # Save output to the dict
             self.sensor_output[self.sensor_names[1]] = output
+            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[1], epoch_time, output))
 
             logger.info("Reading {} sensor...".format(self.sensor_names[2]))
             c4, c5 = self.read_sensor(2)
@@ -150,6 +162,7 @@ class SensorServer(Thread):
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[2], output))
             # Save output to the dict
             self.sensor_output[self.sensor_names[2]] = output
+            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[2], epoch_time, output))
 
             logger.info("Reading {} sensor...".format(self.sensor_names[3]))
             c6, c7 = self.read_sensor(3)
@@ -157,6 +170,7 @@ class SensorServer(Thread):
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[3], output))
             # Save output to the dict
             self.sensor_output[self.sensor_names[3]] = output
+            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[3], epoch_time, output))
 
             logger.info("Reading {} sensor...".format(self.sensor_names[4]))
             c8, c9 = self.read_sensor(4)
@@ -164,6 +178,7 @@ class SensorServer(Thread):
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[4], output))
             # Save output to the dict
             self.sensor_output[self.sensor_names[4]] = output
+            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[4], epoch_time, output))
 
             logger.info("Reading {} sensor...".format(self.sensor_names[5]))
             c10, c11 = self.read_sensor(5)
@@ -171,7 +186,9 @@ class SensorServer(Thread):
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[5], output))
             # Save output to the dict
             self.sensor_output[self.sensor_names[5]] = output
+            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[5], epoch_time, output))
 
+            self.db_conn.commit()
             self.sensor_output_lock.release()
 
             # Idle for 3 seconds
