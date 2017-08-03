@@ -33,7 +33,7 @@ class BTClientHandler(asyncore.dispatcher_with_send):
                 self.data += data[:lf_char_index]
                 print "received [%s]" % self.data
 
-                self.send(self.data + '\n')
+                self.handle_command(self.data)
 
                 # Clear the buffer
                 self.data = ""
