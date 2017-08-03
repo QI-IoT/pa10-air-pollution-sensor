@@ -43,6 +43,56 @@ Run the following command on an UDOO Neo to start RFCOMM server:
 $ python air-pollution-sensor.py
 ```
 
+# Architecture
+This is a typical asynchronous network program. The program needs to
+read sensor outputs, write the output values into a local database, and
+then send the real time data to one or more Android clients over
+Bluetooth.
+
+If a client requests history data, the program has to do SQL query from
+the local database, compile the result into CSV format and send it to
+the client.
+
+It is simple when there is only one client. We can use a infinite loop
+to handle the requests. However, if there are multiple clients, querying
+local database for history data might take a long period of time and
+eventually blocks the request from other clients.
+
+To address this issue, it would be better if we split the program into
+multiple threads, let these threads focus on their own jobs, and talk to
+each other through `get()` method, global variables, or a database.
+
+## Main Thread
+The main thread starts sensor server thread and Bluetooth server thread.
+After that, it enters a infinite loop and does nothing.
+
+## Sensor Server
+The *sensor server* thread has the following features:
+1. Read the sensor every *t* seconds;
+2. Save the sensor output in a local variable and provide a *get()*
+method;
+3. Write the sensor output into a local SQLite database in which each
+sensor has its own table with key being the epoch time and value being
+the output value.
+
+## Bluetooth Server and Client Handler
+The *Bluetooth server* handles Bluetooth connections as well as requests
+sent from the Android clients. A client handler is created by the server
+where there is a new connection. They have the following features:
+1. Handle Bluetooth connections.
+2. Create a client handler for each client. Each client handler is also
+an independent thread that sends no data, real-time data, or history
+data according to the current status: `status == 0` means that server
+will not send data to that client.
+3. If `status == 1`, the client handler will get the real-time output
+from the sensor server and send it to the client socket over Bluetooth.
+4. If `status == 2`, the client handler will query the history from the
+local database and send it to the client socket over Bluetooth.
+
+## SQLite Database
+All the sensor history is stored here. Since the module is thread-safe,
+we don't need to create a proxy to handle database R/W.
+
 # FAQ
 * Why `pip` cannot verify server's certificates?
 
