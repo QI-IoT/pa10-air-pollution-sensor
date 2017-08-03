@@ -13,9 +13,7 @@ class BTClientHandler(asyncore.dispatcher_with_send):
         asyncore.dispatcher_with_send.__init__(self, socket)
         self.server = server
         self.data = ""
-        self.sending_status = 0
-        self.start_time = -1
-        self.end_time = -1
+        self.sending_status = {'real-time': False, 'history': [True, -1, -1]}
 
     def handle_read(self):
         try:
@@ -52,18 +50,16 @@ class BTClientHandler(asyncore.dispatcher_with_send):
         #       Stop sending real time data, and query the history data from the database. Getting history data might
         #       take some time so we should use a different thread to handle this request
         if re.match('stop', command) is not None:
-            self.sending_status = 0
+            self.sending_status['real-time'] = False
             pass
 
         if re.match('start', command) is not None:
-            self.sending_status = 1
+            self.sending_status['real-time'] = True
             pass
 
         result = re.match(r"history (\d+) (\d+)", command)
         if result is not None:
-            self.sending_status = 2
-            self.start_time = int(result.group(1))
-            self.end_time = int(result.group(2))
+            self.sending_status['history'] = [True, int(result.group(1)), int(result.group(2))]
 
     def handle_close(self):
         # flush the buffer

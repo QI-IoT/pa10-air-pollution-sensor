@@ -77,15 +77,17 @@ if __name__ == '__main__':
 
         for client_handler in bt_server.get_active_client_handlers():
             # Use a copy() to get the copy of the set, avoiding 'set change size during iteration' error
-            if client_handler.sending_status == 1:
+            if client_handler.sending_status.get('history')[0]:
+                start_time = client_handler.sending_status.get('history')[1]
+                end_time = client_handler.sending_status.get('history')[2]
+                print "History: start_time = {}, end_time = {}".format(start_time, end_time)
+                # Reset history status
+                client_handler.sending_status['history'] = [False, -1, -1]
+            elif client_handler.sending_status.get('real-time'):
                 try:
                     client_handler.send(msg)
                 except Exception as e:
                     BTError.print_error(handler=client_handler, error=BTError.ERR_WRITE, error_message=repr(e))
                     client_handler.handle_close()
-            elif client_handler.sending_status == 2:
-                start_time = client_handler.start_time
-                end_time = client_handler.end_time
-                print "History: start_time = {}, end_time = {}".format(start_time, end_time)
         # Sleep for 3 seconds
         sleep(3)
