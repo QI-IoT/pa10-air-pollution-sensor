@@ -8,7 +8,7 @@ import json
 import logging
 import sqlite3
 from threading import Thread
-from time import sleep, time
+from time import gmtime, sleep, strftime, time
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,12 @@ if __name__ == '__main__':
             if client_handler.sending_status.get('history')[0]:
                 start_time = client_handler.sending_status.get('history')[1]
                 end_time = client_handler.sending_status.get('history')[2]
-                print "History: start_time = {}, end_time = {}".format(start_time, end_time)
+                logger.info("Client requests history between {} and {}"
+                            .format(strftime("%Y-%m-%d %H:%M:%S", gmtime(start_time)),
+                                    strftime("%Y-%m-%d %H:%M:%S", gmtime(end_time))))
+                print "Client requests history between {} and {}"\
+                    .format(strftime("%Y-%m-%d %H:%M:%S", gmtime(start_time)),
+                            strftime("%Y-%m-%d %H:%M:%S", gmtime(end_time)))
                 # Reset history status
                 client_handler.sending_status['history'] = [False, -1, -1]
             elif client_handler.sending_status.get('real-time'):
