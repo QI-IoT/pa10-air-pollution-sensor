@@ -22,9 +22,9 @@ if __name__ == '__main__':
     bt_server = BTServer(uuid, bt_service_name)
 
     # Create BT server thread and run it
-    bt_server = Thread(target=asyncore.loop, name="BT Server Thread")
-    bt_server.daemon = True
-    bt_server.start()
+    bt_server_thread = Thread(target=asyncore.loop, name="BT Server Thread")
+    bt_server_thread.daemon = True
+    bt_server_thread.start()
 
     # Create sensor server thread and run it
     sensor_server = SensorServer(database_name="air_pollution_data.db")
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         # Attach a new line character at the end of the message
         msg += '\n'
 
-        for client_handler in bt_server.active_client_handlers.copy():
+        for client_handler in bt_server.get_active_client_handlers():
             # Use a copy() to get the copy of the set, avoiding 'set change size during iteration' error
             if client_handler.sending_status == 1:
                 try:

@@ -40,6 +40,9 @@ class BTServer(asyncore.dispatcher):
         logger.info("Waiting for connection on RFCOMM channel %d" % self.port)
         print "Waiting for connection on RFCOMM channel %d" % self.port
 
+    def get_active_client_handlers(self):
+        return self.active_client_handlers.copy()
+
     def handle_accept(self):
         # This method is called when an incoming connection request from a client is accept.
         # Get the client-side BT socket
