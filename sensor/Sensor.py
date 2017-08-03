@@ -64,7 +64,8 @@ class SensorServer(Thread):
         # Create tables for each sensors. Each table consists a time stamp key (epoch time) in integer and a real value
         # to hold the result of the sensor. Create tables only if they are not exist.
         for sensor_name in self.sensor_names:
-            self.db_cur.execute("CREATE TABLE IF NOT EXISTS %s (time int PRIMARY KEY NOT NULL, value real)" % sensor_name)
+            self.db_cur.execute("CREATE TABLE IF NOT EXISTS %s (time int PRIMARY KEY NOT NULL, value real)"
+                                % sensor_name)
 
         # Commit the changes. When a database is accessed by multiple connections, and one of the processes modifies the
         # database, the SQLite database is locked until that transaction is committed. The timeout parameter specifies
