@@ -53,9 +53,9 @@ class BTServer(asyncore.dispatcher):
             client_handler = BTClientHandler(socket=client_sock, server=self)
             self.active_client_handlers.add(client_handler)
 
-            logger.info("Accepted connection from {},  number of active connections is {}"
+            logger.info("Accepted connection from {}, number of active connections is {}"
                         .format(repr(client_addr[0]), len(self.active_client_handlers)))
-            print "Accepted connection from {},  number of active connections is {}"\
+            print "Accepted connection from {}, number of active connections is {}"\
                 .format(repr(client_addr[0]), len(self.active_client_handlers))
 
     def handle_connect(self):
