@@ -5,14 +5,22 @@ from sensor import SensorServer
 import argparse
 import asyncore
 import json
+import logging
+import sqlite3
 from threading import Thread
 from time import sleep, time
+
+logger = logging.getLogger(__name__)
+
 
 if __name__ == '__main__':
     # Create option parser
     usage = "usage: %prog [options] arg"
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", dest="output_format", default="csv", help="set output format: csv, json")
+    parser.add_argument("--output", dest="output_format", default="csv",
+                        help="set output format: csv, json")
+    parser.add_argument("--database", dest="database_name", default="air_pollution_data.db",
+                        help="specify database file")
 
     args = parser.parse_args()
 
@@ -27,9 +35,16 @@ if __name__ == '__main__':
     bt_server_thread.start()
 
     # Create sensor server thread and run it
-    sensor_server = SensorServer(database_name="air_pollution_data.db")
+    sensor_server = SensorServer(database_name=args.database_name)
     sensor_server.daemon = True
     sensor_server.start()
+
+    # Create database connection and retrieve its cursor
+    try:
+        db_conn = sqlite3.connect(args.database_name)
+        db_cur = db_conn.cursor()
+    except Exception as e:
+        logger.error("Error connecting the database {}, reason: {}".format(args.database_name, e.message))
 
     while True:
         msg = ""
@@ -43,11 +58,11 @@ if __name__ == '__main__':
         PM25 = sensor_output.get('PM25', -1)
 
         if args.output_format == "csv":
-            # Create CSV message "'realtime', time, temp, SN1, SN2, SN3, SN4, PM25".
-            msg = "realtime, {}, {}, {}, {}, {}, {}, {}".format(epoch_time, temp, SN1, SN2, SN3, SN4, PM25)
+            # Create CSV message "'real-time', time, temp, SN1, SN2, SN3, SN4, PM25".
+            msg = "real-time, {}, {}, {}, {}, {}, {}, {}".format(epoch_time, temp, SN1, SN2, SN3, SN4, PM25)
         elif args.output_format == "json":
             # Create JSON message.
-            output = {'type': 'realtime',
+            output = {'type': 'real-time',
                       'time': epoch_time,
                       'temp': temp,
                       'SN1': SN1,
@@ -68,5 +83,8 @@ if __name__ == '__main__':
                 except Exception as e:
                     BTError.print_error(handler=client_handler, error=BTError.ERR_WRITE, error_message=repr(e))
                     client_handler.handle_close()
+            elif client_handler.sending_status == 2:
+                start_time = client_handler.start_time
+                stop_time = client_handler.stop_time
         # Sleep for 3 seconds
         sleep(3)
