@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class SensorServer(Thread):
     """Sensor server that keeps reading sensors and provide get_sensor_output() method for user"""
 
-    def __init__(self):
+    def __init__(self, database_name="air_pollution_data.db"):
         # Parent class constructor
         Thread.__init__(self)
 
@@ -43,7 +43,13 @@ class SensorServer(Thread):
         # read at the same time; similarly, when reading the result, lock it on to prevent it from being updated.
         self.sensor_output_lock = Lock()
 
-        self.database_name = "air_pollution_data.db"
+        # Here we have a decision to make. I decide to let sensor server write sensor outputs to the local database. Of
+        # course we can do so in a different thread either in a synchronous way or in an asynchronous way. If we do it
+        # with a synchronous approach, we need to use locks to keep synchronization; if we do it with an asynchronous
+        # solution, then SQL3Lite is already an asynchronous module and I don't see good reason of adding another layer
+        # of complexity. Perhaps the most reasonable way would be specifying the database in the main thread and then
+        # send it to the sensor server thread.
+        self.database_name = database_name
 
         try:
             # Create the database file and get the connection object.

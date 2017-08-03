@@ -3,7 +3,7 @@ from time import sleep
 from sensor import SensorServer
 
 if __name__ == '__main__':
-    sensor_server = SensorServer()
+    sensor_server = SensorServer(database_name="air_pollution_data.db")
     sensor_server.daemon = True
     sensor_server.start()
 
