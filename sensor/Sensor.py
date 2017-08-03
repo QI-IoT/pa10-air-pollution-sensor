@@ -43,10 +43,35 @@ class SensorServer(Thread):
         # read at the same time; similarly, when reading the result, lock it on to prevent it from being updated.
         self.sensor_output_lock = Lock()
 
-        self.db_conn = sqlite3.connect("air_pollution_data.db")
-        self.db_cur = self.db_conn.cursor()
+        self.database_name = "air_pollution_data.db"
+
+        try:
+            # Create the database file and get the connection object.
+            self.db_conn = sqlite3.connect(self.database_name)
+            # Get database cursor from the connection object.
+            self.db_cur = self.db_conn.cursor()
+        except Exception as e:
+            logger.error("Error connecting the database %s, reason: %s" % (self.database_name, e.message))
+            print "Error connecting the database %s, reason: %s\n" % (self.database_name, e.message)
+            self.__del__()
+
+        # Create tables for each sensors. Each table consists a time stamp key (epoch time) in integer and a real value
+        # to hold the result of the sensor. Create tables only if they are not exist.
         for sensor_name in self.sensor_names:
             self.db_cur.execute("CREATE TABLE IF NOT EXISTS %s (time int PRIMARY KEY NOT NULL, value real)" % sensor_name)
+
+        # Commit the changes. When a database is accessed by multiple connections, and one of the processes modifies the
+        # database, the SQLite database is locked until that transaction is committed. The timeout parameter specifies
+        # how long the connection should wait for the lock to go away until raising an exception. The default for the
+        # timeout parameter is 5.0 (five seconds).
+        self.db_conn.commit()
+
+    def __del__(self):
+        # Gracefully close the database connection.
+        self.db_conn.close()
+        # Reset GPIOs.
+        for i in xrange(0, 4):
+            self.gpio.digitalWrite(24 + i, Gpio.LOW)
 
     def get_sensor_output(self):
         # Get the latest sensor output
@@ -79,11 +104,11 @@ class SensorServer(Thread):
             return v1, v2
         except Exception as e:
             logger.error("Error reading sensor %d, reason: %s" % (n, e.message))
-            print "Error reading sensor %d, reason: %s" % (n, e.message)
+            print "Error reading sensor %d, reason: %s\n" % (n, e.message)
             return 0.0, 0.0
 
     def run(self):
-        # Keep reading sensors
+        # Keep reading sensors.
         while True:
             # Acquire the lock
             self.sensor_output_lock.acquire()
@@ -97,7 +122,7 @@ class SensorServer(Thread):
             #  n. set MUX to sensor n, read sensor n.
             for i in xrange(0, 6):
                 logger.info("Reading %s sensor..." % self.sensor_names[i])
-                print "Reading %s sensor..." % self.sensor_names[i]
+                print "Reading %s sensor...\n" % self.sensor_names[i]
                 v1, v2 = self.read_sensor(i)
                 self.sensor_output[self.sensor_names[i]] = v1 - v2
 
