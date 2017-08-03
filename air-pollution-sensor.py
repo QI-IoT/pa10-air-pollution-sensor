@@ -85,6 +85,7 @@ if __name__ == '__main__':
                     client_handler.handle_close()
             elif client_handler.sending_status == 2:
                 start_time = client_handler.start_time
-                stop_time = client_handler.stop_time
+                end_time = client_handler.end_time
+                print "History: start_time = {}, end_time = {}".format(start_time, end_time)
         # Sleep for 3 seconds
         sleep(3)
