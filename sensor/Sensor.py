@@ -23,8 +23,7 @@ class SensorServer(Thread):
             for pin in self.gpio_pins:
                 self.gpio.pinMode(pin, self.gpio.OUTPUT)
         except Exception as e:
-            logger.error("Error setting GPIO pin, reason %s" % e.message)
-            print "Error setting GPIO pin %d, reason %s" % e.message
+            logger.error("Error setting GPIO pin {}, reason {}".format(pin, e.message))
 
         # Use A0 port
         self.adc_raw = "/sys/bus/iio/devices/iio:device0/in_voltage0_raw"
@@ -57,15 +56,14 @@ class SensorServer(Thread):
             # Get database cursor from the connection object.
             self.db_cur = self.db_conn.cursor()
         except Exception as e:
-            logger.error("Error connecting the database %s, reason: %s" % (self.database_name, e.message))
-            print "Error connecting the database %s, reason: %s\n" % (self.database_name, e.message)
+            logger.error("Error connecting the database {}, reason: {}".format(self.database_name, e.message))
             self.__del__()
 
         # Create tables for each sensors. Each table consists a time stamp key (epoch time) in integer and a real value
         # to hold the result of the sensor. Create tables only if they are not exist.
         for sensor_name in self.sensor_names:
-            self.db_cur.execute("CREATE TABLE IF NOT EXISTS %s (time int PRIMARY KEY NOT NULL, value real)"
-                                % sensor_name)
+            self.db_cur.execute("CREATE TABLE IF NOT EXISTS {} (time int PRIMARY KEY NOT NULL, value real)"
+                                .format(sensor_name))
 
         # Commit the changes. When a database is accessed by multiple connections, and one of the processes modifies the
         # database, the SQLite database is locked until that transaction is committed. The timeout parameter specifies
@@ -110,8 +108,7 @@ class SensorServer(Thread):
 
             return v1, v2
         except Exception as e:
-            logger.error("Error reading sensor %d, reason: %s" % (n, e.message))
-            print "Error reading sensor %d, reason: %s\n" % (n, e.message)
+            logger.error("Error reading sensor {}, reason: {}".format(n, e.message))
             return 0.0, 0.0
 
     def run(self):
@@ -128,8 +125,7 @@ class SensorServer(Thread):
             #  ...
             #  n. set MUX to sensor n, read sensor n.
             for i in xrange(0, 6):
-                logger.info("Reading %s sensor..." % self.sensor_names[i])
-                print "Reading %s sensor...\n" % self.sensor_names[i]
+                logger.info("Reading {} sensor...".format(self.sensor_names[i]))
                 v1, v2 = self.read_sensor(i)
                 self.sensor_output[self.sensor_names[i]] = v1 - v2
 
