@@ -100,10 +100,13 @@ class SensorServer(Thread):
         # Set MUX to read the first channel
         try:
             self.set_mux_channel(2 * n)
+            # Wait for 50 ms
+            sleep(0.05)
             v1 = int(open(self.adc_raw).read()) * float(open(self.adc_scale).read())
 
             # Set MUX to read the second channel
             self.set_mux_channel(2 * n + 1)
+            sleep(0.05)
             v2 = int(open(self.adc_raw).read()) * float(open(self.adc_scale).read())
 
             return v1, v2
@@ -120,16 +123,56 @@ class SensorServer(Thread):
             self.sensor_output['time'] = int(time())
 
             # Do sensor reading here
-            #  1. set MUX to sensor 1, read sensor 1;
-            #  2. set MUX to sensor 2, read sensor 2;
+            #  1. set MUX to sensor 0, read sensor 0;
+            #  2. set MUX to sensor 1, read sensor 1;
             #  ...
-            #  n. set MUX to sensor n, read sensor n.
-            for i in xrange(0, 6):
-                logger.info("Reading {} sensor...".format(self.sensor_names[i]))
-                v1, v2 = self.read_sensor(i)
-                self.sensor_output[self.sensor_names[i]] = v1 - v2
+            #  n. set MUX to sensor n - 1, read sensor n - 1.
+            logger.info("Reading {} sensor...".format(self.sensor_names[0]))
+            # Temperature constant
+            t0 = 550
+            c0, c1 = self.read_sensor(0)
+            # Channel 1 is not connected so we don't care about its output
+            temperature = c0 - t0
+            logger.info("{} sensor outputs {} degree".format(self.sensor_names[0], temperature))
+            # Save output to the dict
+            self.sensor_output[self.sensor_names[0]] = temperature
+
+            logger.info("Reading {} sensor...".format(self.sensor_names[1]))
+            c2, c3 = self.read_sensor(1)
+            output = c2 - c3
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[1], output))
+            # Save output to the dict
+            self.sensor_output[self.sensor_names[1]] = output
+
+            logger.info("Reading {} sensor...".format(self.sensor_names[2]))
+            c4, c5 = self.read_sensor(2)
+            output = c4 - c5
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[2], output))
+            # Save output to the dict
+            self.sensor_output[self.sensor_names[2]] = output
+
+            logger.info("Reading {} sensor...".format(self.sensor_names[3]))
+            c6, c7 = self.read_sensor(3)
+            output = c6 - c7
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[3], output))
+            # Save output to the dict
+            self.sensor_output[self.sensor_names[3]] = output
+
+            logger.info("Reading {} sensor...".format(self.sensor_names[4]))
+            c8, c9 = self.read_sensor(4)
+            output = c8 - c9
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[4], output))
+            # Save output to the dict
+            self.sensor_output[self.sensor_names[4]] = output
+
+            logger.info("Reading {} sensor...".format(self.sensor_names[5]))
+            c10, c11 = self.read_sensor(5)
+            output = c10 - c11
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[5], output))
+            # Save output to the dict
+            self.sensor_output[self.sensor_names[5]] = output
 
             self.sensor_output_lock.release()
 
             # Idle for 3 seconds
-            sleep(3)
+            sleep(1.8)
