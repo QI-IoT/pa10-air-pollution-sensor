@@ -64,13 +64,13 @@ class SensorServer(Thread):
         # -----------------------------------------------
         #   int | real | real | real | real | real | real
         self.db_cur.execute(("CREATE TABLE IF NOT EXISTS history (time int PRIMARY KEY NOT NULL,"
-                             " {0} real, {1} real, {2} real, {3} real, {4} real, {5} real)").format(
-            self.sensor_names[0],
-            self.sensor_names[1],
-            self.sensor_names[2],
-            self.sensor_names[3],
-            self.sensor_names[4],
-            self.sensor_names[5]))
+                             " {0} real, {1} real, {2} real, {3} real, {4} real, {5} real)")
+                            .format(self.sensor_names[0],
+                                    self.sensor_names[1],
+                                    self.sensor_names[2],
+                                    self.sensor_names[3],
+                                    self.sensor_names[4],
+                                    self.sensor_names[5]))
 
         # Commit the changes. When a database is accessed by multiple connections, and one of the processes modifies the
         # database, the SQLite database is locked until that transaction is committed. The timeout parameter specifies
@@ -189,8 +189,8 @@ class SensorServer(Thread):
             # Save output to the dict
             self.sensor_output[self.sensor_names[5]] = pm25
 
-            self.db_cur.execute("INSERT INTO history VALUES ({}, {}, {}, {}, {}, {}, {})".format(
-                epoch_time, temp, sn1, sn2, sn3, sn4, pm25))
+            self.db_cur.execute("INSERT INTO history VALUES ({}, {}, {}, {}, {}, {}, {})"
+                                .format(epoch_time, temp, sn1, sn2, sn3, sn4, pm25))
 
             self.db_conn.commit()
             self.sensor_output_lock.release()
