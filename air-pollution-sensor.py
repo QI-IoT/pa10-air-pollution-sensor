@@ -17,7 +17,7 @@ if __name__ == '__main__':
     # Create option parser
     usage = "usage: %prog [options] arg"
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", dest="output_format", default="csv",
+    parser.add_argument("--output", dest="output_format", default="json",
                         help="set output format: csv, json")
     parser.add_argument("--database", dest="database_name", default="air_pollution_data.db",
                         help="specify database file")
