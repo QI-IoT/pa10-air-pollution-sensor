@@ -88,6 +88,11 @@ if __name__ == '__main__':
                             strftime("%Y-%m-%d %H:%M:%S", gmtime(end_time)))
                 # Reset history status
                 client_handler.sending_status['history'] = [False, -1, -1]
+
+                # Here we need to use SQL query to look up history data. We have to do it in a smart way since there
+                # could be tens of thousands of data in a single table. If we JOIN two or three tables together, we
+                # can easily get a huge table and could also be very slow.
+
             elif client_handler.sending_status.get('real-time'):
                 try:
                     client_handler.send(msg)

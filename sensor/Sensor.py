@@ -59,11 +59,18 @@ class SensorServer(Thread):
             logger.error("Error connecting the database {}, reason: {}".format(self.database_name, e.message))
             self.__del__()
 
-        # Create tables for each sensors. Each table consists a time stamp key (epoch time) in integer and a real value
-        # to hold the result of the sensor. Create tables only if they are not exist.
-        for sensor_name in self.sensor_names:
-            self.db_cur.execute("CREATE TABLE IF NOT EXISTS {} (time int PRIMARY KEY NOT NULL, value real)"
-                                .format(sensor_name))
+        # Create a 'history' table for history data.
+        #  TIME | Temp |  SN1 |  SN2 |  SN3 |  SN4 | PM25
+        # -----------------------------------------------
+        #   int | real | real | real | real | real | real
+        self.db_cur.execute(("CREATE TABLE IF NOT EXISTS history (time int PRIMARY KEY NOT NULL,"
+                             " {0} real, {1} real, {2} real, {3} real, {4} real, {5} real)").format(
+            self.sensor_names[0],
+            self.sensor_names[1],
+            self.sensor_names[2],
+            self.sensor_names[3],
+            self.sensor_names[4],
+            self.sensor_names[5]))
 
         # Commit the changes. When a database is accessed by multiple connections, and one of the processes modifies the
         # database, the SQLite database is locked until that transaction is committed. The timeout parameter specifies
@@ -142,51 +149,48 @@ class SensorServer(Thread):
             t0 = 550
             c0, c1 = self.read_sensor(0)
             # Channel 1 is not connected so we don't care about its output
-            temperature = c0 - t0
-            logger.info("{} sensor outputs {} degree".format(self.sensor_names[0], temperature))
+            temp = c0 - t0
+            logger.info("{} sensor outputs {} degree".format(self.sensor_names[0], temp))
             # Save output to the dict
-            self.sensor_output[self.sensor_names[0]] = temperature
-            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[0], epoch_time, temperature))
+            self.sensor_output[self.sensor_names[0]] = temp
 
             logger.info("Reading {} sensor...".format(self.sensor_names[1]))
             c2, c3 = self.read_sensor(1)
-            output = c2 - c3
-            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[1], output))
+            sn1 = c2 - c3
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[1], sn1))
             # Save output to the dict
-            self.sensor_output[self.sensor_names[1]] = output
-            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[1], epoch_time, output))
+            self.sensor_output[self.sensor_names[1]] = sn1
 
             logger.info("Reading {} sensor...".format(self.sensor_names[2]))
             c4, c5 = self.read_sensor(2)
-            output = c4 - c5
-            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[2], output))
+            sn2 = c4 - c5
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[2], sn2))
             # Save output to the dict
-            self.sensor_output[self.sensor_names[2]] = output
-            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[2], epoch_time, output))
+            self.sensor_output[self.sensor_names[2]] = sn2
 
             logger.info("Reading {} sensor...".format(self.sensor_names[3]))
             c6, c7 = self.read_sensor(3)
-            output = c6 - c7
-            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[3], output))
+            sn3 = c6 - c7
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[3], sn3))
             # Save output to the dict
-            self.sensor_output[self.sensor_names[3]] = output
-            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[3], epoch_time, output))
+            self.sensor_output[self.sensor_names[3]] = sn3
 
             logger.info("Reading {} sensor...".format(self.sensor_names[4]))
             c8, c9 = self.read_sensor(4)
-            output = c8 - c9
-            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[4], output))
+            sn4 = c8 - c9
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[4], sn4))
             # Save output to the dict
-            self.sensor_output[self.sensor_names[4]] = output
-            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[4], epoch_time, output))
+            self.sensor_output[self.sensor_names[4]] = sn4
 
             logger.info("Reading {} sensor...".format(self.sensor_names[5]))
             c10, c11 = self.read_sensor(5)
-            output = c10 - c11
-            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[5], output))
+            pm25 = c10 - c11
+            logger.info("{} sensor outputs {} ppb".format(self.sensor_names[5], pm25))
             # Save output to the dict
-            self.sensor_output[self.sensor_names[5]] = output
-            self.db_cur.execute("INSERT INTO {} VALUES ({}, {})".format(self.sensor_names[5], epoch_time, output))
+            self.sensor_output[self.sensor_names[5]] = pm25
+
+            self.db_cur.execute("INSERT INTO history VALUES ({}, {}, {}, {}, {}, {}, {})".format(
+                epoch_time, temp, sn1, sn2, sn3, sn4, pm25))
 
             self.db_conn.commit()
             self.sensor_output_lock.release()
