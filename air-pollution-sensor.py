@@ -59,11 +59,10 @@ if __name__ == '__main__':
 
         if args.output_format == "csv":
             # Create CSV message "'real-time', time, temp, SN1, SN2, SN3, SN4, PM25".
-            msg = "real-time, {}, {}, {}, {}, {}, {}, {}".format(epoch_time, temp, SN1, SN2, SN3, SN4, PM25)
+            msg = "{}, {}, {}, {}, {}, {}, {}".format(epoch_time, temp, SN1, SN2, SN3, SN4, PM25)
         elif args.output_format == "json":
             # Create JSON message.
-            output = {'type': 'real-time',
-                      'time': epoch_time,
+            output = {'time': epoch_time,
                       'temp': temp,
                       'SN1': SN1,
                       'SN2': SN2,
@@ -71,9 +70,6 @@ if __name__ == '__main__':
                       'SN4': SN4,
                       'PM25': PM25}
             msg = json.dumps(output)
-
-        # Attach a new line character at the end of the message
-        msg += '\n'
 
         for client_handler in bt_server.get_active_client_handlers():
             # Use a copy() to get the copy of the set, avoiding 'set change size during iteration' error
@@ -95,7 +91,9 @@ if __name__ == '__main__':
 
             elif client_handler.sending_status.get('real-time'):
                 try:
-                    client_handler.send(msg)
+                    # Add the leading character 'r' to indicate its a real-time data, and a newline character '\n'
+                    # to indicate the end of the line
+                    client_handler.send('r' + msg + '\n')
                 except Exception as e:
                     BTError.print_error(handler=client_handler, error=BTError.ERR_WRITE, error_message=repr(e))
                     client_handler.handle_close()
