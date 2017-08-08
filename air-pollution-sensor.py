@@ -21,6 +21,8 @@ if __name__ == '__main__':
                         help="set output format: csv, json")
     parser.add_argument("--database", dest="database_name", default="air_pollution_data.db",
                         help="specify database file")
+    parser.add_argument("--baud-rate", dest="baud_rate", default=9600,
+                        help="specify Bluetooth baud rate in bps")
 
     args = parser.parse_args()
 
@@ -102,6 +104,11 @@ if __name__ == '__main__':
                     for row in results:
                         h_msg = "{},{},{},{},{},{},{}".format(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
                         client_handler.send('h' + h_msg + '\n')
+                        # A character is 8-bit long, so the whole string has (len(h_msg) + 2) * 8 bits; the default
+                        # baud rate for HC-05 standard is 9600, so the time for the Bluetooth socket to process the
+                        # string is (len(h_msg) + 2) * 8 / args.baud_rate; we add 10% margin to this time and wait for
+                        # such a long time before we send the next row.
+                        sleep(((len(h_msg) + 2) * 8 * 1.1 / args.baud_rate))
 
                     # Send end-of-message indicator
                     client_handler.send("h\n")
