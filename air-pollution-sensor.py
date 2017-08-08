@@ -100,10 +100,20 @@ if __name__ == '__main__':
                     db_cur.execute("SELECT * FROM history WHERE time >= {} AND time <= {}".format(start_time, end_time))
                     # Get the result
                     results = db_cur.fetchall()
+                    n = len(results)
 
+                    logger.info("Number of data points in the results is {}, sending them at {} bps"
+                                .format(n, args.baud_rate))
+                    print "INFO: Number of data points in the results is {}, sending them at {} bps"\
+                        .format(n, args.baud_rate)
+
+                    i = 0
                     for row in results:
+                        i += 1
                         h_msg = "{},{},{},{},{},{},{}".format(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
                         client_handler.send('h' + h_msg + '\n')
+
+                        print "INFO: Sending results ({}/{})...\r".format(i, n),
                         # A character is 8-bit long, so the whole string has (len(h_msg) + 2) * 8 bits; the default
                         # baud rate for HC-05 standard is 9600, so the time for the Bluetooth socket to process the
                         # string is (len(h_msg) + 2) * 8 / args.baud_rate; we add 10% margin to this time and wait for
@@ -111,6 +121,7 @@ if __name__ == '__main__':
                         sleep(((len(h_msg) + 2) * 8 * 1.1 / args.baud_rate))
 
                     # Send end-of-message indicator
+                    print "\nINFO: Done"
                     client_handler.send("h\n")
 
                 # Reset history status
