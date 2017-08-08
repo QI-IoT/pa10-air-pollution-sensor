@@ -57,9 +57,10 @@ if __name__ == '__main__':
         SN4 = sensor_output.get('SN4', -1)
         PM25 = sensor_output.get('PM25', -1)
 
+        r_msg = ""
         if args.output_format == "csv":
             # Create CSV message "'real-time', time, temp, SN1, SN2, SN3, SN4, PM25".
-            msg = "{}, {}, {}, {}, {}, {}, {}".format(epoch_time, temp, SN1, SN2, SN3, SN4, PM25)
+            r_msg = "{},{},{},{},{},{},{}".format(epoch_time, temp, SN1, SN2, SN3, SN4, PM25)
         elif args.output_format == "json":
             # Create JSON message.
             output = {'time': epoch_time,
@@ -69,31 +70,49 @@ if __name__ == '__main__':
                       'SN3': SN3,
                       'SN4': SN4,
                       'PM25': PM25}
-            msg = json.dumps(output)
+            r_msg = json.dumps(output)
 
         for client_handler in bt_server.get_active_client_handlers():
-            # Use a copy() to get the copy of the set, avoiding 'set change size during iteration' error
+            # Use a copy() to get the copy of the set, avoiding 'set change size during iteration' error.
             if client_handler.sending_status.get('history')[0]:
                 start_time = client_handler.sending_status.get('history')[1]
                 end_time = client_handler.sending_status.get('history')[2]
-                logger.info("Client requests history between {} and {}"
-                            .format(strftime("%Y-%m-%d %H:%M:%S", gmtime(start_time)),
-                                    strftime("%Y-%m-%d %H:%M:%S", gmtime(end_time))))
-                print "Client requests history between {} and {}"\
-                    .format(strftime("%Y-%m-%d %H:%M:%S", gmtime(start_time)),
-                            strftime("%Y-%m-%d %H:%M:%S", gmtime(end_time)))
+                fmt_start_time = strftime("%Y-%m-%d %H:%M:%S", gmtime(start_time))
+                fmt_end_time = strftime("%Y-%m-%d %H:%M:%S", gmtime(end_time))
+
+                logger.info("Client requests history between {} and {}".format(fmt_start_time, fmt_end_time))
+                print "INFO: Client requests history between {} and {}".format(fmt_start_time, fmt_end_time)
+
+                if start_time > end_time:
+                    # If start time is greater than end time, ignore the command.
+                    logger.warn("Start time {} is greater than end time {}, skipping..."
+                                .format(fmt_start_time, fmt_end_time))
+                    print "WARN: Start time {} is greater than end time {}, skipping..."\
+                        .format(fmt_start_time, fmt_end_time)
+                elif db_cur is None:
+                    logger.error("SQL database {} is not available, skipping...".format(args.database_name))
+                    print "ERROR: SQL database {} is not available, skipping...".format(args.database_name)
+                else:
+                    # If start time is smaller than or equal to end time AND SQL database is available, do SQL query
+                    # from the database.
+                    db_cur.execute("SELECT * FROM history WHERE time >= {} AND time <= {}".format(start_time, end_time))
+                    # Get the result
+                    results = db_cur.fetchall()
+
+                    for row in results:
+                        h_msg = "{},{},{},{},{},{},{}".format(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
+                        client_handler.send('h' + h_msg + '\n')
+
+                    # Send end-of-message indicator
+                    client_handler.send("h\n")
+
                 # Reset history status
                 client_handler.sending_status['history'] = [False, -1, -1]
-
-                # Here we need to use SQL query to look up history data. We have to do it in a smart way since there
-                # could be tens of thousands of data in a single table. If we JOIN two or three tables together, we
-                # can easily get a huge table and could also be very slow.
-
             elif client_handler.sending_status.get('real-time'):
                 try:
                     # Add the leading character 'r' to indicate its a real-time data, and a newline character '\n'
                     # to indicate the end of the line
-                    client_handler.send('r' + msg + '\n')
+                    client_handler.send('r' + r_msg + '\n')
                 except Exception as e:
                     BTError.print_error(handler=client_handler, error=BTError.ERR_WRITE, error_message=repr(e))
                     client_handler.handle_close()
