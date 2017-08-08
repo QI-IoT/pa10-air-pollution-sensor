@@ -108,6 +108,7 @@ if __name__ == '__main__':
                         .format(n, args.baud_rate)
 
                     i = 0
+                    print "INFO: Sending results (0/0)...\r",
                     for row in results:
                         i += 1
                         h_msg = "{},{},{},{},{},{},{}".format(row[0], row[1], row[2], row[3], row[4], row[5], row[6])
