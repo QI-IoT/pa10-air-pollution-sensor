@@ -102,7 +102,7 @@ class SensorServer(Thread):
         # sensor 0: channel 0, 1
         # sensor 1: channel 2, 3
         # ...
-        # sensor 7: channel 15, 16
+        # sensor 7: channel 14, 15
 
         # Set MUX to read the first channel
         try:
