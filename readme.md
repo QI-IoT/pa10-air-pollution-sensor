@@ -94,6 +94,15 @@ All the sensor history is stored here. Since the module is thread-safe,
 we don't need to create a proxy to handle database R/W.
 
 # FAQ
+* Why there is a compilation error?
+
+   Theses commands only works with the latest customized SD card image.
+   If you use the official image, you will need to manually install the
+   dependencies. The customized SD card image was design to simply the
+   set up of internet sharing using Windows 7/10 machines. If you are
+   using a Mac or a Linux machine, you might need to consider using the
+   official image and set up network sharing manually.
+   
 * Why `pip` cannot verify server's certificates?
 
    This might happen if your system time is not properly synced. You may
