@@ -112,6 +112,8 @@ class SensorServer(Thread):
             v1 = int(open(self.adc_raw).read()) * float(open(self.adc_scale).read())
 
             # Set MUX to read the second channel
+            # According to https://www.udoo.org/docs-neo/Hardware_&_Accessories/ADC.html, the output has 12-bit
+            # precision (0 - 4095) representing 0 - 3300 mv region
             self.set_mux_channel(2 * n + 1)
             sleep(0.05)
             v2 = int(open(self.adc_raw).read()) * float(open(self.adc_scale).read())
@@ -156,35 +158,51 @@ class SensorServer(Thread):
 
             logger.info("Reading {} sensor...".format(self.sensor_names[1]))
             c2, c3 = self.read_sensor(1)
-            sn1 = c2 - c3
+            # NO2-A43F
+            sn1 = ((c2 - 220) - (c3 - 260) / 2.02) / 0.207
+            # based on the certificate of 25-000014 and AAN803-03 document
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[1], sn1))
             # Save output to the dict
             self.sensor_output[self.sensor_names[1]] = sn1
 
             logger.info("Reading {} sensor...".format(self.sensor_names[2]))
             c4, c5 = self.read_sensor(2)
-            sn2 = c4 - c5
+            sn2 = ((c4 - 414) - (c5 - 400) / 1.28) / 0.256
+            # OX-A431
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[2], sn2))
             # Save output to the dict
             self.sensor_output[self.sensor_names[2]] = sn2
 
             logger.info("Reading {} sensor...".format(self.sensor_names[3]))
             c6, c7 = self.read_sensor(3)
-            sn3 = c6 - c7
+            sn3 = ((c6 - 346) - (c7 - 274) / -1.00) / 0.276
+            # CO-A4
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[3], sn3))
             # Save output to the dict
             self.sensor_output[self.sensor_names[3]] = sn3
 
             logger.info("Reading {} sensor...".format(self.sensor_names[4]))
             c8, c9 = self.read_sensor(4)
-            sn4 = c8 - c9
+            sn4 = ((c8 - 300) - (c9 - 294) / 1.82) / 0.300
+            # SO2-A4
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[4], sn4))
             # Save output to the dict
             self.sensor_output[self.sensor_names[4]] = sn4
 
             logger.info("Reading {} sensor...".format(self.sensor_names[5]))
             c10, c11 = self.read_sensor(5)
-            pm25 = c10 - c11
+            # Channel 11 is not connected so we don't care about its output
+            x = c10 / 1000.0
+            hppcf = 240 * pow(x, 6) - 2491.3 * pow(x, 5) + 9448.7 * pow(x, 4) - 14840.0 * pow(x, 3) \
+                    + 10684.0 * pow(x, 2) + 2211.8 * x + 7.9623
+            umg3 = 0.518 + 0.0274 * hppcf
+            pm25 = umg3
+            if pm25 < 0:
+                pm25 = 0
+            # Reverse-engineered from:
+            # https://github.com/Lahorde/airbeam/blob/master/firmware/arduino/AirBeam/AirBeam.ino
+            # Note that its its 'analogtotal' is in volts rather than millivolts. In our case, the output of c10 is in
+            # volts so we need to fix the conversion function.
             logger.info("{} sensor outputs {} ppb".format(self.sensor_names[5], pm25))
             # Save output to the dict
             self.sensor_output[self.sensor_names[5]] = pm25
